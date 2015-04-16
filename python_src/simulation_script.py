@@ -9,10 +9,20 @@ from datetime import datetime
 from sklearn import linear_model, cross_validation, metrics, svm
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support, accuracy_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+
+def memory_use():
+    memfile = open('/proc/meminfo','r')
+    total_mem_str = memfile.readline().split()
+    used_mem_str = memfile.readline().split()
+    memfile.close()
+
+    total_mem = int(total_mem_str[1])
+    used_mem = int(used_mem_str[1])
+    return {'total':total_mem,'used':used_mem}
+
 
 def accuracy_measure(predicted,known):
 
@@ -91,10 +101,11 @@ if __name__ == '__main__':
     train_y = pd.concat(train_y)
     print train_x.shape
 
+    membefore = memory_use()
+    forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=8)
+    memafter = memory_use()
 
-    forest = forest_generation(number_of_trees=50,features=train_x,delay=train_y,nprocs=4)
-
-    print "Training Time: ",forest["time"]," Memory Used by forest: ",forest["memory"]
+    print "Training Time: ",forest["time"]," Memory Used by forest: ", (membefore['used']-memafter['used'])
 
     # Evaluate on test set
     pred = predict(forest=forest["forest"],samples=test_x)
