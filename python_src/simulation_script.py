@@ -1,3 +1,4 @@
+from __future__ import division
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -13,6 +14,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
+def accuracy_measure(predicted,known):
+
+    correct_answers = 0
+    for i in range(0,predicted.shape[0]):
+        if (abs(predicted[i]-known[i])/known[i])>0.2:
+            correct_answers = correct_answers + 1
+
+    return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
+
+
+
 def read_csv_from_dir(path, cols, col_types=None):
     pieces = []
     for f in os.listdir(path):
@@ -21,6 +33,28 @@ def read_csv_from_dir(path, cols, col_types=None):
             pieces.append(pd.read_csv(fhandle, names=cols, dtype=col_types))
             fhandle.close()
     return pd.concat(pieces, ignore_index=True)
+
+
+def forest_generation(number_of_trees,features,delay,nprocs=1):
+
+    results = dict()
+    start = datetime.now()
+    clf_rf = RandomForestClassifier(n_estimators=number_of_trees, n_jobs=nprocs,min_samples_split=100)
+    clf_rf.fit(features, delay)
+    total_time = (datetime.now()-start).total_seconds()
+    memory = sys.getsizeof(clf_rf)
+
+    results = {"forest":clf_rf,"time":total_time,"memory":memory}
+    return results
+
+def predict(forest,samples):
+
+    start = datetime.now()
+    pr = forest.predict(samples)
+    total_time = (datetime.now()-start).total_seconds()
+    results = {"predictions":pr,"time":total_time}
+    return results
+
 
 if __name__ == '__main__':
 
@@ -38,19 +72,19 @@ if __name__ == '__main__':
 
     # Create training set and test set
     cols = ['month', 'day', 'dow', 'hour', 'distance', 'days_from_holiday']
-    train_y = data_2002['delay'] >= 15
-    train = data_2003['delay'] >= 15
-    train_y = [train_y]#, train]
-    train = data_2004['delay'] >= 15
+    train_y = data_2002['delay']
+    train = data_2003['delay']
+    train_y = [train_y, train]
+    train = data_2004['delay']
     train_y.append(train)
-    train = data_2005['delay'] >= 15
+    train = data_2005['delay']
     train_y.append(train)
-    train = data_2006['delay'] >= 15
+    train = data_2006['delay']
     train_y.append(train)
-    train = data_2007['delay'] >= 15
+    train = data_2007['delay']
     train_y.append(train)
     train_x = [data_2002[cols],data_2003[cols],data_2004[cols],data_2005[cols],data_2006[cols],data_2007[cols]]
-    test_y = data_2008['delay'] >= 15
+    test_y = data_2008['delay']
     test_x = data_2008[cols]
 
     train_x = pd.concat(train_x)
@@ -58,18 +92,24 @@ if __name__ == '__main__':
     print train_x.shape
 
 
-    start = datetime.now()
-    clf_rf = RandomForestClassifier(n_estimators=50, n_jobs=4)
-    clf_rf.fit(train_x, train_y)
-    total_time = (datetime.now()-start).total_seconds()
-    print total_time
+    forest = forest_generation(number_of_trees=50,features=train_x,delay=train_y,nprocs=4)
+
+    print "Training Time: ",forest["time"]," Memory Used by forest: ",forest["memory"]
+
     # Evaluate on test set
-    pr = clf_rf.predict(test_x)
+    pred = predict(forest=forest["forest"],samples=test_x)
+    predicted = pred['predictions']
+
+    for i in range(0,predicted.shape[0]):
+        if type(predicted[i]) != int:
+            predicted[i]=0
+
 
     # print results
-    cm = confusion_matrix(test_y, pr)
-    print("Confusion matrix")
-    print(pd.DataFrame(cm))
-    report_svm = precision_recall_fscore_support(list(test_y), list(pr), average='micro')
-    print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \
-        (report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(pr)))
+    #cm = confusion_matrix(test_y, pred["predictions"])
+    #print("Confusion matrix")
+    #print(pd.DataFrame(cm))
+    #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
+    #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
+    accur = accuracy_measure(test_y,predicted)
+    print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs']
