@@ -74,20 +74,20 @@ if __name__ == '__main__':
     for j in range(1,4):
         logfile.write("Run Number %d\n"%j)
         #Years that will be used
-        for i in range(2000,2008):
+        for i in range(2013,1999,-1):
             logfile.write ("Training with %d\n"%i)
             cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
             col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 
                'carrier': str, 'dest': str, 'days_from_holiday': int}
-            data_2008 = read_csv_from_dir('../data/ord_2008_1', cols, col_types)
+            data_2014 = read_csv_from_dir('../data/ord_2014_1', cols, col_types)
             data = read_csv_from_dir('../data/ord_%d_1'%i, cols, col_types)
 
             # Create training set and test set
             cols = ['month', 'day', 'dow', 'hour', 'distance', 'days_from_holiday']
             train_y = [data['delay']]
             train_x = [data[cols]]
-            test_y = data_2008['delay']
-            test_x = data_2008[cols]
+            test_y = data_2014['delay']
+            test_x = data_2014[cols]
 
             train_x = pd.concat(train_x)
             train_y = pd.concat(train_y)

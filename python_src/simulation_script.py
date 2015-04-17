@@ -49,12 +49,13 @@ def forest_generation(number_of_trees,features,delay,nprocs=1):
 
     results = dict()
     start = datetime.now()
+    membefore = memory_use()
     clf_rf = RandomForestClassifier(n_estimators=number_of_trees, n_jobs=nprocs,min_samples_split=100)
     clf_rf.fit(features, delay)
+    memafter = memory_use()
     total_time = (datetime.now()-start).total_seconds()
-    memory = sys.getsizeof(clf_rf)
 
-    results = {"forest":clf_rf,"time":total_time,"memory":memory}
+    results = {"forest":clf_rf,"time":total_time,"memory":(membefore['used']-memafter['used'])}
     return results
 
 def predict(forest,samples):
@@ -72,55 +73,44 @@ if __name__ == '__main__':
     cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
     col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 
 	   'carrier': str, 'dest': str, 'days_from_holiday': int}
-    data_2002 = read_csv_from_dir('../data/ord_2002_1', cols, col_types)
-    data_2003 = read_csv_from_dir('../data/ord_2003_1', cols, col_types)
-    data_2004 = read_csv_from_dir('../data/ord_2004_1', cols, col_types)
-    data_2005 = read_csv_from_dir('../data/ord_2005_1', cols, col_types)
-    data_2006 = read_csv_from_dir('../data/ord_2006_1', cols, col_types)
     data_2007 = read_csv_from_dir('../data/ord_2007_1', cols, col_types)
     data_2008 = read_csv_from_dir('../data/ord_2008_1', cols, col_types)
 
     # Create training set and test set
-    cols = ['month', 'day', 'dow', 'hour', 'distance', 'days_from_holiday']
-    train_y = data_2002['delay']
-    train = data_2003['delay']
-    train_y = [train_y, train]
-    train = data_2004['delay']
-    train_y.append(train)
-    train = data_2005['delay']
-    train_y.append(train)
-    train = data_2006['delay']
-    train_y.append(train)
-    train = data_2007['delay']
-    train_y.append(train)
-    train_x = [data_2002[cols],data_2003[cols],data_2004[cols],data_2005[cols],data_2006[cols],data_2007[cols]]
-    test_y = data_2008['delay']
-    test_x = data_2008[cols]
+    col_comb = it.combinations(cols[1:],6)
+    for features in col_comb:
+    
+        train_y = [data_2007['delay']]
+        train_x = [data_2007[features]]
+        test_y = data_2008['delay']
+        test_x = data_2008[features]
 
-    train_x = pd.concat(train_x)
-    train_y = pd.concat(train_y)
-    print train_x.shape
+        train_x = pd.concat(train_x)
+        train_y = pd.concat(train_y)
+        print train_x.shape
 
-    membefore = memory_use()
-    forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=8)
-    memafter = memory_use()
+    
+        forest = forest_generation(number_of_trees=20,features=train_x,delay=train_y,nprocs=4)
+    
 
-    print "Training Time: ",forest["time"]," Memory Used by forest: ", (membefore['used']-memafter['used'])
+        print "Training Time: ",forest["time"]," Memory Used by forest: ", forest['memory'], "kB"
 
     # Evaluate on test set
-    pred = predict(forest=forest["forest"],samples=test_x)
-    predicted = pred['predictions']
+        pred = predict(forest=forest["forest"],samples=test_x)
+        predicted = pred['predictions']
 
-    for i in range(0,predicted.shape[0]):
-        if type(predicted[i]) != int:
-            predicted[i]=0
+        count = 0
+        for i in range(0,predicted.shape[0]):
+            if type(predicted[i]) != int:
+                predicted[i]=0
+                count = count + 1
 
-
-    # print results
-    #cm = confusion_matrix(test_y, pred["predictions"])
-    #print("Confusion matrix")
-    #print(pd.DataFrame(cm))
-    #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
-    #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
-    accur = accuracy_measure(test_y,predicted)
-    print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs']
+        print "Not an Integer ",count
+        # print results
+        #cm = confusion_matrix(test_y, pred["predictions"])
+        #print("Confusion matrix")
+        #print(pd.DataFrame(cm))
+        #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
+        #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
+        accur = accuracy_measure(test_y,predicted)
+        print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs']
