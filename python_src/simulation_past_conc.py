@@ -109,7 +109,7 @@ if __name__ == '__main__':
             predicted = pred['predictions']
 
             for i in range(0,predicted.shape[0]):
-                if type(predicted[i]) != int:
+                if type(predicted[i]) != np.int64:
                     predicted[i]=0
 
 

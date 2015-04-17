@@ -28,7 +28,7 @@ def accuracy_measure(predicted,known):
 
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
-        if (abs(predicted[i]-known[i])/known[i])>0.2:
+        if (abs(predicted[i]-known[i])/known[i])<0.2:
             correct_answers = correct_answers + 1
 
     return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
@@ -71,11 +71,13 @@ if __name__ == '__main__':
     # read files
     logfile = open("training_with_past.log",'w')
     #Number of runs
-    for j in range(1,4):
+    for j in range(1,2):
         logfile.write("Run Number %d\n"%j)
+        print "Run Number %d\n"%j
         #Years that will be used
         for i in range(2013,1999,-1):
             logfile.write ("Training with %d\n"%i)
+            print "Training with %d\n"%i
             cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
             col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 
                'carrier': str, 'dest': str, 'days_from_holiday': int}
@@ -97,17 +99,19 @@ if __name__ == '__main__':
             memafter = memory_use()
 
             logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
-
+            print "Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used']))
             # Evaluate on test set
             pred = predict(forest=forest["forest"],samples=test_x)
             predicted = pred['predictions']
 
+            changed = 0
             for i in range(0,predicted.shape[0]):
-                if type(predicted[i]) != int:
+                if type(predicted[i]) != np.int64:
                     predicted[i]=0
+                    changed = changed + 1
 
 
-            # print results
+            print changed
             #cm = confusion_matrix(test_y, pred["predictions"])
             #print("Confusion matrix")
             #print(pd.DataFrame(cm))
@@ -115,6 +119,7 @@ if __name__ == '__main__':
             #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
             accur = accuracy_measure(test_y,predicted)
             logfile.write("Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs']))
+            print "Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs'])
             del forest
             del pred
 
