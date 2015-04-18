@@ -73,41 +73,109 @@ if __name__ == '__main__':
     # read files
     cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
     col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 'carrier': str, 'dest': str, 'days_from_holiday': int}
+    data_2009 = read_csv_from_dir('../data/ord_2009_1', cols, col_types)
+    data_2010 = read_csv_from_dir('../data/ord_2010_1', cols, col_types)
+    data_2011 = read_csv_from_dir('../data/ord_2011_1', cols, col_types)
+    data_2012 = read_csv_from_dir('../data/ord_2012_1', cols, col_types)
     data_2013 = read_csv_from_dir('../data/ord_2013_1', cols, col_types)
     data_2014 = read_csv_from_dir('../data/ord_2014_1', cols, col_types)
 
-    carrier_2007 = data_2013['carrier']
-    dest_2007 = data_2013['dest']
+    carrier_2009 = data_2009['carrier']
+    dest_2009 = data_2009['dest']
 
-    carrier_2007 = pd.Series(carrier_2007.ravel()).unique()
-    dest_2007 = pd.Series(dest_2007.ravel()).unique()
+    carrier_2009 = pd.Series(carrier_2009.ravel()).unique()
+    dest_2009 = pd.Series(dest_2009.ravel()).unique()
 
-    for carrier in carrier_2007:
+    for carrier in carrier_2009:
+        numID=int(binascii.b2a_hex(carrier),16)
+        data_2009['carrier'][data_2009['carrier']==carrier]=numID
+
+    for dest in dest_2009:
+        numID=int(binascii.b2a_hex(dest),16)
+        data_2009['dest'][data_2009['dest']==dest]=numID
+
+    carrier_2010 = data_2010['carrier']
+    dest_2010 = data_2010['dest']
+
+    carrier_2010 = pd.Series(carrier_2010.ravel()).unique()
+    dest_2010 = pd.Series(dest_2010.ravel()).unique()
+
+    for carrier in carrier_2010:
+        numID=int(binascii.b2a_hex(carrier),16)
+        data_2010['carrier'][data_2010['carrier']==carrier]=numID
+
+    for dest in dest_2010:
+        numID=int(binascii.b2a_hex(dest),16)
+        data_2010['dest'][data_2010['dest']==dest]=numID
+
+    carrier_2011 = data_2011['carrier']
+    dest_2011 = data_2011['dest']
+
+    carrier_2011 = pd.Series(carrier_2011.ravel()).unique()
+    dest_2011 = pd.Series(dest_2011.ravel()).unique()
+
+    for carrier in carrier_2011:
+        numID=int(binascii.b2a_hex(carrier),16)
+        data_2011['carrier'][data_2011['carrier']==carrier]=numID
+
+    for dest in dest_2011:
+        numID=int(binascii.b2a_hex(dest),16)
+        data_2011['dest'][data_2011['dest']==dest]=numID
+
+    carrier_2012 = data_2012['carrier']
+    dest_2012 = data_2012['dest']
+
+    carrier_2012 = pd.Series(carrier_2012.ravel()).unique()
+    dest_2012 = pd.Series(dest_2012.ravel()).unique()
+
+    for carrier in carrier_2012:
+        numID=int(binascii.b2a_hex(carrier),16)
+        data_2012['carrier'][data_2012['carrier']==carrier]=numID
+
+    for dest in dest_2012:
+        numID=int(binascii.b2a_hex(dest),16)
+        data_2012['dest'][data_2012['dest']==dest]=numID
+
+    carrier_2013 = data_2013['carrier']
+    dest_2013 = data_2013['dest']
+
+    carrier_2013 = pd.Series(carrier_2013.ravel()).unique()
+    dest_2013 = pd.Series(dest_2013.ravel()).unique()
+
+    for carrier in carrier_2013:
         numID=int(binascii.b2a_hex(carrier),16)
         data_2013['carrier'][data_2013['carrier']==carrier]=numID
 
-    for dest in dest_2007:
+    for dest in dest_2013:
         numID=int(binascii.b2a_hex(dest),16)
         data_2013['dest'][data_2013['dest']==dest]=numID
 
-    carrier_2008 = data_2014['carrier']
-    dest_2008 = data_2014['dest']
+    carrier_2014 = data_2014['carrier']
+    dest_2014 = data_2014['dest']
 
-    carrier_2008 = pd.Series(carrier_2008.ravel()).unique()
-    dest_2008 = pd.Series(dest_2008.ravel()).unique()
+    carrier_2014 = pd.Series(carrier_2008.ravel()).unique()
+    dest_2014 = pd.Series(dest_2008.ravel()).unique()
 
-    for carrier in carrier_2008:
+    for carrier in carrier_2014:
         numID=int(binascii.b2a_hex(carrier),16)
         data_2014['carrier'][data_2014['carrier']==carrier]=numID
 
-    for dest in dest_2008:
+    for dest in dest_2014:
         numID=int(binascii.b2a_hex(dest),16)
         data_2014['dest'][data_2014['dest']==dest]=numID
 
-    del carrier_2007
-    del carrier_2008
-    del dest_2007
-    del dest_2008
+    del carrier_2009
+    del carrier_2010
+    del carrier_2011
+    del carrier_2012
+    del carrier_2013
+    del carrier_2014
+    del dest_2009
+    del dest_2010
+    del dest_2011
+    del dest_2012
+    del dest_2013
+    del dest_2014
 
     # Create training set and test set
     col_comb = it.combinations(cols[1:],6)
