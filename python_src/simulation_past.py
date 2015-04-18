@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import os
 
 def memory_use():
+    #This function reads the values of the meminfo file to get the total memory and the
+    #amount of free memory the system has at that point. Do not know if works in OSX
     memfile = open('/proc/meminfo','r')
     total_mem_str = memfile.readline().split()
     used_mem_str = memfile.readline().split()
@@ -25,7 +27,7 @@ def memory_use():
 
 
 def accuracy_measure(predicted,known):
-
+    
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
         if (abs(predicted[i]-known[i])/known[i])<0.2:
@@ -57,7 +59,7 @@ def forest_generation(number_of_trees,features,delay,nprocs=1):
     results = {"forest":clf_rf,"time":total_time,"memory":memory}
     return results
 
-def predict(forest,samples):
+def predict(forest,samples,known):
 
     start = datetime.now()
     pr = forest.predict(samples)
@@ -71,7 +73,7 @@ if __name__ == '__main__':
     # read files
     logfile = open("training_with_past.log",'w')
     #Number of runs
-    for j in range(1,2):
+    for j in range(1,4):
         logfile.write("Run Number %d\n"%j)
         print "Run Number %d\n"%j
         #Years that will be used
@@ -101,7 +103,7 @@ if __name__ == '__main__':
             logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
             print "Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used']))
             # Evaluate on test set
-            pred = predict(forest=forest["forest"],samples=test_x)
+            pred = predict(forest=forest["forest"],samples=test_x,known=test_y)
             predicted = pred['predictions']
 
             changed = 0
@@ -120,6 +122,8 @@ if __name__ == '__main__':
             accur = accuracy_measure(test_y,predicted)
             logfile.write("Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs']))
             print "Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs'])
+
+            #Delete the generated forest and prediction.
             del forest
             del pred
 

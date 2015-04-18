@@ -82,6 +82,7 @@ if __name__ == '__main__':
         for i in range(2013,1999,-1):
             years.append(i)
             logfile.write ("Training with %s\n"%years)
+            print "Training with %s\n"%years
             cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
             col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 
                'carrier': str, 'dest': str, 'days_from_holiday': int}
@@ -103,6 +104,7 @@ if __name__ == '__main__':
             memafter = memory_use()
 
             logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
+            print "Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used']))
 
             # Evaluate on test set
             pred = predict(forest=forest["forest"],samples=test_x)
@@ -121,6 +123,7 @@ if __name__ == '__main__':
             #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
             accur = accuracy_measure(test_y,predicted)
             logfile.write("Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs']))
+            print "Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs'])
             del forest
             del pred
 
