@@ -181,6 +181,7 @@ if __name__ == '__main__':
     col_comb = it.combinations(cols[1:],6)
     logfile = open("training_with_different_features.log",'w')
     for features in col_comb:
+        logfile.write("Selected Features: [%s,%s,%s,%s,%s,%s]\n"%(features[0],features[1],features[2],features[3],features[4],features[5]))
         print "Selected Features: ",features
         train_y = [data_2013['delay']]
         train_x = [data_2013[list(features)]]
