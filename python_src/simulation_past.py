@@ -80,6 +80,7 @@ if __name__ == '__main__':
         for i in range(2013,1999,-1):
             logfile.write ("Training with %d\n"%i)
             print "Training with %d\n"%i
+            
             cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
             col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 
                'carrier': str, 'dest': str, 'days_from_holiday': int}
