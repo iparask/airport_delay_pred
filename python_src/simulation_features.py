@@ -153,8 +153,8 @@ if __name__ == '__main__':
     carrier_2014 = data_2014['carrier']
     dest_2014 = data_2014['dest']
 
-    carrier_2014 = pd.Series(carrier_2008.ravel()).unique()
-    dest_2014 = pd.Series(dest_2008.ravel()).unique()
+    carrier_2014 = pd.Series(carrier_2014.ravel()).unique()
+    dest_2014 = pd.Series(dest_2014.ravel()).unique()
 
     for carrier in carrier_2014:
         numID=int(binascii.b2a_hex(carrier),16)
