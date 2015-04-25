@@ -154,8 +154,8 @@ if __name__ == '__main__':
     carrier_2014 = data_2014['carrier']
     dest_2014 = data_2014['dest']
 
-    carrier_2014 = pd.Series(carrier_2008.ravel()).unique()
-    dest_2014 = pd.Series(dest_2008.ravel()).unique()
+    carrier_2014 = pd.Series(carrier_2014.ravel()).unique()
+    dest_2014 = pd.Series(dest_2014.ravel()).unique()
 
     for carrier in carrier_2014:
         numID=int(binascii.b2a_hex(carrier),16)
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     col_comb = it.combinations(cols[1:],6)
     logfile = open("training_with_different_features.log",'w')
     for features in col_comb:
-        logfile.write("Selected Features: %s"%features)
+        logfile.write("Selected Features: [%s,%s,%s,%s,%s,%s]\n"%(features[0],features[1],features[2],features[3],features[4],features[5]))
         print "Selected Features: ",features
 
         train_y = [data_2009['delay']]
