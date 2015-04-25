@@ -15,15 +15,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-def memory_use():
-    memfile = open('/proc/meminfo','r')
-    total_mem_str = memfile.readline().split()
-    used_mem_str = memfile.readline().split()
-    memfile.close()
-
-    total_mem = int(total_mem_str[1])
-    used_mem = int(used_mem_str[1])
-    return {'total':total_mem,'used':used_mem}
+def memory_usage_ps():
+    import subprocess
+    out = subprocess.Popen(['ps', 'v', '-p', str(os.getpid())],stdout=subprocess.PIPE).communicate()[0].split(b'\n')
+    vsz_index = out[0].split().index(b'RSS')
+    mem = float(out[1].split()[vsz_index])
+    return mem
 
 
 def accuracy_measure(predicted,known):
@@ -72,7 +69,6 @@ if __name__ == '__main__':
 
     # read files
     cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
-    cols_best = ['day','dow','distance','carrier','dest','days_from_holiday']
     col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 'carrier': str, 'dest': str, 'days_from_holiday': int}
     data_2009 = read_csv_from_dir('../data/ord_2009_1', cols, col_types)
     data_2010 = read_csv_from_dir('../data/ord_2010_1', cols, col_types)
@@ -206,15 +202,16 @@ if __name__ == '__main__':
         train_x = pd.concat(train_x)
         train_y = pd.concat(train_y)
         print train_x.shape
+        logfile.write ("Data Size %d %d\n"%(train_x.shape[0],train_x.shape[1]))
 
     
-        membefore = memory_use()
+        membefore = memory_usage_ps()
         forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=1)
-        memafter = memory_use()
+        memafter = memory_usage_ps()
     
 
-        logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
-        print "Training Time: ",forest["time"]," Memory Used by forest: ", (membefore['used']-memafter['used']), "kB"
+        logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore)))
+        print "Training Time: ",forest["time"]," Memory Used by forest: ", (memafter-membefore), "kB"
 
     # Evaluate on test set
         pred = predict(forest=forest["forest"],samples=test_x)
@@ -260,13 +257,13 @@ if __name__ == '__main__':
     print train_x.shape
 
     
-    membefore = memory_use()
+    membefore = memory_usage_ps()
     forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=1)
-    memafter = memory_use()
+    memafter = memory_usage_ps()
     
 
-    logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
-    print "Training Time: ",forest["time"]," Memory Used by forest: ", (membefore['used']-memafter['used']), "kB"
+    logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore)))
+    print "Training Time: ",forest["time"]," Memory Used by forest: ", (memafter-membefore), "kB"
 
     # Evaluate on test set
     pred = predict(forest=forest["forest"],samples=test_x)

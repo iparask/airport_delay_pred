@@ -13,15 +13,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-def memory_use():
-    memfile = open('/proc/meminfo','r')
-    total_mem_str = memfile.readline().split()
-    used_mem_str = memfile.readline().split()
-    memfile.close()
-
-    total_mem = int(total_mem_str[1])
-    used_mem = int(used_mem_str[1])
-    return {'total':total_mem,'used':used_mem}
+def memory_usage_ps():
+    import subprocess
+    out = subprocess.Popen(['ps', 'v', '-p', str(os.getpid())],stdout=subprocess.PIPE).communicate()[0].split(b'\n')
+    vsz_index = out[0].split().index(b'RSS')
+    mem = float(out[1].split()[vsz_index])
+    return mem
 
 
 def accuracy_measure(predicted,known):
@@ -90,7 +87,35 @@ if __name__ == '__main__':
             data = read_csv_from_dir('../data/ord_%d_1'%i, cols, col_types)
 
             # Create training set and test set
-            cols = ['month', 'day', 'dow', 'hour', 'distance', 'days_from_holiday']
+            cols = ['day','dow','distance','carrier','dest','days_from_holiday']
+
+            carrier = data['carrier']
+            dest = data['dest']
+
+            carrier = pd.Series(carrier.ravel()).unique()
+            dest = pd.Series(dest.ravel()).unique()
+
+            for carr in carrier:
+                numID=int(binascii.b2a_hex(carr),16)
+                data['carrier'][data['carrier']==carr]=numID
+
+            for dst in dest:
+                numID=int(binascii.b2a_hex(dst),16)
+                data['dest'][data['dest']==dst]=numID
+
+            carrier_2014 = data_2014['carrier']
+            dest_2014 = data_2014['dest']
+
+            carrier_2014 = pd.Series(carrier_2014.ravel()).unique()
+            dest_2014 = pd.Series(dest_2014.ravel()).unique()
+
+            for carrier in carrier_2014:
+                numID=int(binascii.b2a_hex(carrier),16)
+                data_2014['carrier'][data_2014['carrier']==carrier]=numID
+
+            for dest in dest_2014:
+                numID=int(binascii.b2a_hex(dest),16)
+                data_2014['dest'][data_2014['dest']==dest]=numID
             train_y.append(data['delay'])
             train_x.append(data[cols])
             test_y = data_2014['delay']
@@ -98,10 +123,12 @@ if __name__ == '__main__':
 
             pdtrain_x = pd.concat(train_x)
             pdtrain_y = pd.concat(train_y)
+            print train_x.shape
+            logfile.write ("Data Size %d %d\n"%(train_x.shape[0],train_x.shape[1]))
 
-            membefore = memory_use()
-            forest = forest_generation(number_of_trees=10,features=pdtrain_x,delay=pdtrain_y,nprocs=4)
-            memafter = memory_use()
+            membefore = memory_usage_ps()
+            forest = forest_generation(number_of_trees=10,features=pdtrain_x,delay=pdtrain_y,nprocs=1)
+            memafter = memory_usage_ps()
 
             logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
             print "Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used']))
