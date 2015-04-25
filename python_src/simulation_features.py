@@ -72,6 +72,7 @@ if __name__ == '__main__':
 
     # read files
     cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
+    cols_best = ['day','dow','distance','carrier','dest','days_from_holiday']
     col_types = {'delay': int, 'month': int, 'day': int, 'dow': int, 'hour': int, 'distance': int, 'carrier': str, 'dest': str, 'days_from_holiday': int}
     data_2009 = read_csv_from_dir('../data/ord_2009_1', cols, col_types)
     data_2010 = read_csv_from_dir('../data/ord_2010_1', cols, col_types)
@@ -183,8 +184,22 @@ if __name__ == '__main__':
     for features in col_comb:
         logfile.write("Selected Features: %s"%features)
         print "Selected Features: ",features
-        train_y = [data_2013['delay']]
-        train_x = [data_2013[list(features)]]
+
+        train_y = [data_2009['delay']]
+        train_x = [data_2009[list(features)]]
+
+        train_y.append(data_2010['delay'])
+        train_x.append(data_2010[list(features)])
+
+        train_y.append(data_2011['delay'])
+        train_x.append(data_2011[list(features)])
+
+        train_y.append(data_2012['delay'])
+        train_x.append(data_2012[list(features)])
+
+        train_y.append(data_2013['delay'])
+        train_x.append(data_2013[list(features)])
+
         test_y = data_2014['delay']
         test_x = data_2014[list(features)]
 
@@ -221,3 +236,55 @@ if __name__ == '__main__':
         del forest
         del pred
         del predicted
+
+    train_y = [data_2009['delay']]
+    train_x = [data_2009[cols[1:]]]
+
+    train_y.append(data_2010['delay'])
+    train_x.append(data_2010[cols[1:]])
+
+    train_y.append(data_2011['delay'])
+    train_x.append(data_2011[cols[1:]])
+
+    train_y.append(data_2012['delay'])
+    train_x.append(data_2012[cols[1:]])
+
+    train_y.append(data_2013['delay'])
+    train_x.append(data_2013[cols[1:]])
+
+    test_y = data_2014['delay']
+    test_x = data_2014[cols[1:]]
+
+    train_x = pd.concat(train_x)
+    train_y = pd.concat(train_y)
+    print train_x.shape
+
+    
+    membefore = memory_use()
+    forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=1)
+    memafter = memory_use()
+    
+
+    logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
+    print "Training Time: ",forest["time"]," Memory Used by forest: ", (membefore['used']-memafter['used']), "kB"
+
+    # Evaluate on test set
+    pred = predict(forest=forest["forest"],samples=test_x)
+    predicted = pred['predictions']
+
+    count = 0
+    for i in range(0,predicted.shape[0]):
+        if type(predicted[i]) != np.int64:
+            predicted[i]=0
+    # print results
+    #cm = confusion_matrix(test_y, pred["predictions"])
+    #print("Confusion matrix")
+    #print(pd.DataFrame(cm))
+    #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
+    #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
+    accur = accuracy_measure(test_y,predicted)
+    logfile.write("Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs']))
+    print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs']
+    del forest
+    del pred
+    del predicted
