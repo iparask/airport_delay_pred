@@ -214,7 +214,7 @@ if __name__ == '__main__':
         print "Training Time: ",forest["time"]," Memory Used by forest: ", (memafter-membefore), "kB"
 
     # Evaluate on test set
-        pred = predict(forest=forest["forest"],samples=test_x)
+        pred = predict(forest=forest["forest"],samples=test_x[1:20])
         predicted = pred['predictions']
 
         count = 0
@@ -227,7 +227,7 @@ if __name__ == '__main__':
         #print(pd.DataFrame(cm))
         #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
         #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
-        accur = accuracy_measure(test_y,predicted)
+        accur = accuracy_measure(test_y[1:20],predicted)
         logfile.write("Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs']))
         print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs']
         del forest
