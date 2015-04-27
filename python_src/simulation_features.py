@@ -56,10 +56,8 @@ def forest_generation(number_of_trees,features,delay,nprocs=1):
 
 def predict(forest,samples):
 
-    pr = np.zeros(samples.shape[0],np.int64)
     start = datetime.now()
-    for i in range(0,samples.shape[0]):
-        pr[i] = forest.predict(samples.irow(i))
+    pr = forest.predict(samples)
     total_time = (datetime.now()-start).total_seconds()
     results = {"predictions":pr,"time":total_time}
     return results

@@ -23,7 +23,7 @@ def accuracy_measure(predicted,known):
 
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
-        if (abs(predicted[i]-known[i])/known[i])<0.2:
+        if (abs(predicted[i]-known[i]))<20:
             correct_answers = correct_answers + 1
 
     return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
@@ -54,8 +54,10 @@ def forest_generation(number_of_trees,features,delay,nprocs=1):
 
 def predict(forest,samples):
 
+    pr = np.zeros(samples.shape[0],np.int64)
     start = datetime.now()
-    pr = forest.predict(samples)
+    for i in range(0,samples.shape[0]):
+        pr[i] = forest.predict(samples.irow(i))
     total_time = (datetime.now()-start).total_seconds()
     results = {"predictions":pr,"time":total_time}
     return results
@@ -64,6 +66,7 @@ def predict(forest,samples):
 if __name__ == '__main__':
 
     NPROCS = 1
+    TREES_NUM=10
 
     # read files
     cols = ['delay', 'month', 'day', 'dow', 'hour', 'distance', 'carrier', 'dest', 'days_from_holiday']
@@ -175,7 +178,7 @@ if __name__ == '__main__':
     del dest_2014
 
     # Create training set and test set
-    logfile = open("training_with_%d_procs.log"%NPROCS,'w')
+    logfile = open("training_with_%d_procs_%d_trees.log"%(NPROCS,TREES_NUM),'w')
 
     train_y = [data_2009['delay']]
     train_x = [data_2009[cols]]
@@ -200,32 +203,24 @@ if __name__ == '__main__':
     print train_x.shape
     logfile.write ("Data Size %d %d\n"%(train_x.shape[0],train_x.shape[1]))
 
+    for i in range(1,2):
+        logfile.write ("Run Number %d\n"%(i))
+        membefore = memory_usage_ps()
+        forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=NPROCS)
+        memafter = memory_usage_ps()
     
-    membefore = memory_usage_ps()
-    forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=NPROCS)
-    memafter = memory_usage_ps()
-    
 
-    logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore)))
-    print "Training Time: ",forest["time"]," Memory Used by forest: ", (memafter-membefore), "kB"
+        logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore)))
+        print "Training Time: ",forest["time"]," Memory Used by forest: ", (memafter-membefore), "kB"
 
-    # Evaluate on test set
-    pred = predict(forest=forest["forest"],samples=test_x)
-    predicted = pred['predictions']
+        # Evaluate on test set
+        predicted = predict(forest=forest["forest"],samples=test_x)
 
-    count = 0
-    for i in range(0,predicted.shape[0]):
-        if type(predicted[i]) != np.int64:
-            predicted[i]=0
-    # print results
-    #cm = confusion_matrix(test_y, pred["predictions"])
-    #print("Confusion matrix")
-    #print(pd.DataFrame(cm))
-    #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
-    #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
-    accur = accuracy_measure(test_y,predicted)
-    logfile.write("Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs']))
-    print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs']
-    del forest
-    del pred
-    del predicted
+        # print results
+        accur = accuracy_measure(predicted["predictions"],test_y)
+        logfile.write("Accuracy: %f Absolute Number: %d. Prediction Time %f\n\n\n"%(accur['relative'],accur['abs'],predicted["time"]))
+        print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs'],"Prediction Time ",predicted["time"]
+        del forest
+        del predicted
+
+    logfile.close()

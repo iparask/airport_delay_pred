@@ -3,11 +3,9 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import sys
-import random
 import numpy as np
+import binascii
 from datetime import datetime
-from sklearn import linear_model, cross_validation, metrics, svm
-from sklearn.metrics import confusion_matrix, precision_recall_fscore_support, accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,7 +23,7 @@ def accuracy_measure(predicted,known):
 
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
-        if (abs(predicted[i]-known[i])/known[i])<0.2:
+        if (abs(predicted[i]-known[i]))<20:
             correct_answers = correct_answers + 1
 
     return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
@@ -56,12 +54,14 @@ def forest_generation(number_of_trees,features,delay,nprocs=1):
 
 def predict(forest,samples):
 
+    pr = np.zeros(samples.shape[0],np.int64)
+    print "Predicting for ",samples.shape[0]
     start = datetime.now()
-    pr = forest.predict(samples)
+    for i in range(0,samples.shape[0]):
+        pr[i] = forest.predict(samples.irow(i))
     total_time = (datetime.now()-start).total_seconds()
     results = {"predictions":pr,"time":total_time}
     return results
-
 
 if __name__ == '__main__':
 
@@ -123,35 +123,23 @@ if __name__ == '__main__':
 
             pdtrain_x = pd.concat(train_x)
             pdtrain_y = pd.concat(train_y)
-            print train_x.shape
-            logfile.write ("Data Size %d %d\n"%(train_x.shape[0],train_x.shape[1]))
+            print pdtrain_x.shape
+            logfile.write ("Data Size %d %d\n"%(pdtrain_x.shape[0],pdtrain_x.shape[1]))
 
             membefore = memory_usage_ps()
             forest = forest_generation(number_of_trees=10,features=pdtrain_x,delay=pdtrain_y,nprocs=1)
             memafter = memory_usage_ps()
 
-            logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used'])))
-            print "Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(membefore['used']-memafter['used']))
+            logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore)))
+            print "Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore))
 
             # Evaluate on test set
-            pred = predict(forest=forest["forest"],samples=test_x)
-            predicted = pred['predictions']
-
-            for i in range(0,predicted.shape[0]):
-                if type(predicted[i]) != np.int64:
-                    predicted[i]=0
-
+            predicted = predict(forest=forest["forest"],samples=test_x)
 
             # print results
-            #cm = confusion_matrix(test_y, pred["predictions"])
-            #print("Confusion matrix")
-            #print(pd.DataFrame(cm))
-            #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
-            #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
-            accur = accuracy_measure(test_y,predicted)
-            logfile.write("Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs']))
-            print "Accuracy: %f Absolute Number: %d\n\n\n"%(accur['relative'],accur['abs'])
+            accur = accuracy_measure(predicted["predictions"],test_y)
+            logfile.write("Accuracy: %f Absolute Number: %d. Prediction Time %f\n\n\n"%(accur['relative'],accur['abs'],predicted["time"]))
+            print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs'],"Prediction Time ",predicted["time"]
             del forest
-            del pred
-
+            del predicted
     logfile.close()
