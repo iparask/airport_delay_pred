@@ -8,8 +8,6 @@ import itertools as it
 import binascii
 import numpy as np
 from datetime import datetime
-from sklearn import linear_model, cross_validation, metrics, svm
-from sklearn.metrics import confusion_matrix, precision_recall_fscore_support, accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -27,7 +25,7 @@ def accuracy_measure(predicted,known):
 
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
-        if (abs(predicted[i]-known[i])/known[i])<0.2:
+        if (abs(predicted[i]-known[i]))<20:
             correct_answers = correct_answers + 1
 
     return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
