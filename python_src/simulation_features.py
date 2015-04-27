@@ -275,3 +275,4 @@ if __name__ == '__main__':
     print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs'],"Prediction Time ",predicted["time"]
     del forest
     del predicted
+    logfile.close()
