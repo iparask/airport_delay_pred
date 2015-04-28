@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import os
 
 def memory_usage_ps():
+    # This function returns the memory used by the process whenever is called.
+    # Does not run on MacOSX
     import subprocess
     out = subprocess.Popen(['ps', 'v', '-p', str(os.getpid())],stdout=subprocess.PIPE).communicate()[0].split(b'\n')
     vsz_index = out[0].split().index(b'RSS')
@@ -20,10 +22,11 @@ def memory_usage_ps():
 
 
 def accuracy_measure(predicted,known):
+    # Considers a result correct if the predicted value has a difference of 20%
 
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
-        if (abs(predicted[i]-known[i]))<20:
+        if (abs(predicted[i]-known[i])/known[i])<0.20:
             correct_answers = correct_answers + 1
 
     return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
@@ -31,6 +34,7 @@ def accuracy_measure(predicted,known):
 
 
 def read_csv_from_dir(path, cols, col_types=None):
+    # Reads all the files from a folder
     pieces = []
     for f in os.listdir(path):
         if f[0] != '.':
@@ -41,6 +45,7 @@ def read_csv_from_dir(path, cols, col_types=None):
 
 
 def forest_generation(number_of_trees,features,delay,nprocs=1):
+    #Generates the forest and calculates the needed time for the training
 
     results = dict()
     start = datetime.now()
@@ -53,6 +58,7 @@ def forest_generation(number_of_trees,features,delay,nprocs=1):
     return results
 
 def predict(forest,samples):
+    # Used for the prediction phase.
 
     pr = np.zeros(samples.shape[0],np.int64)
     print "Predicting for ",samples.shape[0]
@@ -68,7 +74,7 @@ if __name__ == '__main__':
     # read files
     logfile = open("training_with_past_conc.log",'w')
     #Number of runs
-    for j in range(1,4):
+    for j in range(1,11):
         logfile.write("Run Number %d\n"%j)
         #Years that will be used
         train_y=[]
@@ -88,7 +94,9 @@ if __name__ == '__main__':
 
             # Create training set and test set
             cols = ['day','dow','distance','carrier','dest','days_from_holiday']
-
+    
+            # This section is used to change the carrier and destination features
+            # from strings to their hexadecimal numbers.
             carrier = data['carrier']
             dest = data['dest']
 
@@ -116,6 +124,8 @@ if __name__ == '__main__':
             for dest in dest_2014:
                 numID=int(binascii.b2a_hex(dest),16)
                 data_2014['dest'][data_2014['dest']==dest]=numID
+
+            # Create training set and test set
             train_y.append(data['delay'])
             train_x.append(data[cols])
             test_y = data_2014['delay']
@@ -125,7 +135,8 @@ if __name__ == '__main__':
             pdtrain_y = pd.concat(train_y)
             print pdtrain_x.shape
             logfile.write ("Data Size %d %d\n"%(pdtrain_x.shape[0],pdtrain_x.shape[1]))
-
+            
+            # Run the experiment for the Number of trees
             membefore = memory_usage_ps()
             forest = forest_generation(number_of_trees=10,features=pdtrain_x,delay=pdtrain_y,nprocs=1)
             memafter = memory_usage_ps()
@@ -137,7 +148,7 @@ if __name__ == '__main__':
             predicted = predict(forest=forest["forest"],samples=test_x)
 
             # print results
-            accur = accuracy_measure(predicted["predictions"],test_y)
+            accur = accuracy_measure(test_y,predicted["predictions"])
             logfile.write("Accuracy: %f Absolute Number: %d. Prediction Time %f\n\n\n"%(accur['relative'],accur['abs'],predicted["time"]))
             print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs'],"Prediction Time ",predicted["time"]
             del forest

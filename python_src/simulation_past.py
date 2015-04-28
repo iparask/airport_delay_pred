@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import os
 
 def memory_usage_ps():
+    # This function returns the memory used by the process whenever is called.
+    # Does not run on MacOSX
     import subprocess
     out = subprocess.Popen(['ps', 'v', '-p', str(os.getpid())],stdout=subprocess.PIPE).communicate()[0].split(b'\n')
     vsz_index = out[0].split().index(b'RSS')
@@ -20,10 +22,12 @@ def memory_usage_ps():
 
 
 def accuracy_measure(predicted,known):
-    
+    # Considers a result correct if the predicted value has a difference of 20%
+    # from the actual
+
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
-        if (abs(predicted[i]-known[i]))<20:
+        if (abs(predicted[i]-known[i])/known[i])<0.20:
             correct_answers = correct_answers + 1
 
     return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
@@ -31,6 +35,7 @@ def accuracy_measure(predicted,known):
 
 
 def read_csv_from_dir(path, cols, col_types=None):
+    # Reads all the files from a folder
     pieces = []
     for f in os.listdir(path):
         if f[0] != '.':
@@ -41,6 +46,7 @@ def read_csv_from_dir(path, cols, col_types=None):
 
 
 def forest_generation(number_of_trees,features,delay,nprocs=1):
+    #Generates the forest and calculates the needed time for the training
 
     results = dict()
     start = datetime.now()
@@ -53,6 +59,7 @@ def forest_generation(number_of_trees,features,delay,nprocs=1):
     return results
 
 def predict(forest,samples):
+    # Used for the prediction phase.
 
     start = datetime.now()
     pr = forest.predict(samples)
@@ -66,7 +73,7 @@ if __name__ == '__main__':
     # read files
     logfile = open("training_with_past.log",'w')
     #Number of runs
-    for j in range(1,4):
+    for j in range(1,11):
         logfile.write("Run Number %d\n"%j)
         print "Run Number %d\n"%j
         #Years that will be used
@@ -131,12 +138,7 @@ if __name__ == '__main__':
             predicted = predict(forest=forest["forest"],samples=test_x)
 
             # print results
-            #cm = confusion_matrix(test_y, pred["predictions"])
-            #print("Confusion matrix")
-            #print(pd.DataFrame(cm))
-            #report_svm = precision_recall_fscore_support(list(test_y), list(pred["predictions"]), average='micro')
-            #print "\nprecision = %0.2f, recall = %0.2f, F1 = %0.2f, accuracy = %0.2f\n" % \(report_svm[0], report_svm[1], report_svm[2], accuracy_score(list(test_y), list(predicted)))
-            accur = accuracy_measure(predicted["predictions"],test_y)
+            accur = accuracy_measure(test_y,predicted["predictions"])
             logfile.write("Accuracy: %f Absolute Number: %d. Prediction Time %f\n\n\n"%(accur['relative'],accur['abs'],predicted["time"]))
             print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs'],"Prediction Time ",predicted["time"]
             del forest

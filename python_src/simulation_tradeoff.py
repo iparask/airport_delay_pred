@@ -23,7 +23,7 @@ def accuracy_measure(predicted,known):
 
     correct_answers = 0
     for i in range(0,predicted.shape[0]):
-        if (abs(predicted[i]-known[i]))<20:
+        if (abs(predicted[i]-known[i])/known[i])<0.20:
             correct_answers = correct_answers + 1
 
     return {"relative":(correct_answers/known.shape[0]),"abs":correct_answers}
@@ -56,8 +56,12 @@ def predict(forest,samples):
 
     pr = np.zeros(samples.shape[0],np.int64)
     start = datetime.now()
-    for i in range(0,samples.shape[0]):
-        pr[i] = forest.predict(samples.irow(i))
+    for i in range(0,samples.shape[0],16000):
+        if (i+15999)>samples.shape[0]:
+            last = samples.shape[0]-1
+        else:
+            last = i+15999
+        pr[i:last] = forest.predict(samples.irow(range(i,last)))
     total_time = (datetime.now()-start).total_seconds()
     results = {"predictions":pr,"time":total_time}
     return results
@@ -65,7 +69,7 @@ def predict(forest,samples):
 
 if __name__ == '__main__':
 
-    NPROCS = 1
+    NPROCS = [1,2,4,8]
     TREES_NUM=10
 
     # read files
@@ -178,7 +182,7 @@ if __name__ == '__main__':
     del dest_2014
 
     # Create training set and test set
-    logfile = open("training_with_%d_procs_%d_trees.log"%(NPROCS,TREES_NUM),'w')
+    logfile = open("training_with_%d_trees.log"%(TREES_NUM),'w')
 
     train_y = [data_2009['delay']]
     train_x = [data_2009[cols]]
@@ -202,25 +206,28 @@ if __name__ == '__main__':
     train_y = pd.concat(train_y)
     print train_x.shape
     logfile.write ("Data Size %d %d\n"%(train_x.shape[0],train_x.shape[1]))
-
-    for i in range(1,2):
-        logfile.write ("Run Number %d\n"%(i))
-        membefore = memory_usage_ps()
-        forest = forest_generation(number_of_trees=10,features=train_x,delay=train_y,nprocs=NPROCS)
-        memafter = memory_usage_ps()
+    for procs in NPROCS:
+        logfile.write("Number of Procs %d\n"%procs)
+        print "Number of Procs ",procs
+        for i in range(1,11):
+            logfile.write ("Run Number %d\n"%(i))
+            print "Run Number ",i
+            membefore = memory_usage_ps()
+            forest = forest_generation(number_of_trees=TREES_NUM,features=train_x,delay=train_y,nprocs=procs)
+            memafter = memory_usage_ps()
     
 
-        logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore)))
-        print "Training Time: ",forest["time"]," Memory Used by forest: ", (memafter-membefore), "kB"
+            logfile.write ("Training Time: %f Memory Used by forest: %d\n"%(forest["time"],(memafter-membefore)))
+            print "Training Time: ",forest["time"]," Memory Used by forest: ", (memafter-membefore), "kB"
 
-        # Evaluate on test set
-        predicted = predict(forest=forest["forest"],samples=test_x)
+            # Evaluate on test set
+            predicted = predict(forest=forest["forest"],samples=test_x)
 
-        # print results
-        accur = accuracy_measure(predicted["predictions"],test_y)
-        logfile.write("Accuracy: %f Absolute Number: %d. Prediction Time %f\n\n\n"%(accur['relative'],accur['abs'],predicted["time"]))
-        print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs'],"Prediction Time ",predicted["time"]
-        del forest
-        del predicted
+            # print results
+            accur = accuracy_measure(test_y,predicted["predictions"])
+            logfile.write("Accuracy: %f Absolute Number: %d. Prediction Time %f\n\n\n"%(accur['relative'],accur['abs'],predicted["time"]))
+            print "Accuracy: ",accur['relative'],"Absolute Number: ",accur['abs'],"Prediction Time ",predicted["time"]
+            del forest
+            del predicted
 
     logfile.close()
